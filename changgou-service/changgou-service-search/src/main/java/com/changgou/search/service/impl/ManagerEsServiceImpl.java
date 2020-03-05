@@ -59,4 +59,43 @@ public class ManagerEsServiceImpl implements ManagerEsService {
         }
         esManagerMapper.saveAll(skuInfoList);
     }
+
+    /**
+     * 通过spuid更新es索引库
+     * @param id
+     */
+    @Override
+    public void importDataBySpuId(Long id) {
+        List<Sku> skuList = skuFeign.findSkuListBySpuId(id);
+        if (skuList == null || skuList.size()<=0){
+            throw new RuntimeException("当前没有数据被查询到,无法导入索引库");
+        }
+        //将集合转换为json
+        String jsonSkuList = JSON.toJSONString(skuList);
+        List<SkuInfo> skuInfoList = JSON.parseArray(jsonSkuList, SkuInfo.class);
+
+        for (SkuInfo skuInfo : skuInfoList) {
+            //将规格信息进行转换
+            Map specMap = JSON.parseObject(skuInfo.getSpec(), Map.class);
+            skuInfo.setSpecMap(specMap);
+        }
+
+        //添加索引库
+        esManagerMapper.saveAll(skuInfoList);
+    }
+
+    /**
+     * 删除es索引库中的sku
+     * @param id
+     */
+    @Override
+    public void deleteDataBySpuId(Long id) {
+        List<Sku> skuList = skuFeign.findSkuListBySpuId(id);
+        if (skuList == null || skuList.size()<=0){
+            throw new RuntimeException("当前没有数据被查询到,无法导入索引库");
+        }
+        for (Sku sku : skuList) {
+            esManagerMapper.deleteById(sku.getId());
+        }
+    }
 }

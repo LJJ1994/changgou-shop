@@ -8,7 +8,9 @@ import com.changgou.entity.StatusCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /****
  * @Author:LJJ
@@ -128,5 +130,19 @@ public class SkuController {
     @GetMapping("/list")
     public List<Sku> findListForSearch(){
         return skuService.findAll();
+    }
+
+    /**
+     * 通过spuid查询所有sku
+     * @param spuId
+     * @return List<Sku>
+     */
+    @GetMapping("/spu/{spuId}")
+    public List<Sku> findSkuListBySpuId(@PathVariable("spuId") Long spuId){
+        Sku sku = new Sku();
+        sku.setSpuId(spuId);
+        sku.setStatus("1");
+
+        return skuService.findList(sku);
     }
 }

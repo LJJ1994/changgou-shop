@@ -6,10 +6,7 @@ import com.changgou.search.service.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +17,11 @@ public class SearchController {
 
     @Autowired
     private SearchService searchService;
+
+    @GetMapping("/index")
+    public String index(){
+        return "index";
+    }
 
     @GetMapping("/list")
     public String list(@RequestParam Map<String,String> searchMap,Model model){
@@ -53,7 +55,7 @@ public class SearchController {
                     url.append(paramKey).append("=").append(searchMap.get(paramKey)).append("&");
                 }
             }
-            //http://localhost:9009/search/list?keywords=手机&spec_网络制式=4G&
+            //http://localhost:18085/search/list?keywords=手机&spec_网络制式=4G&
             String urlString = url.toString();
             //去除路径上的最后一个&
             urlString=urlString.substring(0,urlString.length()-1);

@@ -6,4 +6,10 @@ public interface ManagerEsService {
 
     //导入全部数据进入es
     void importAll();
+
+    // 通过spuid更新ES索引库
+    void importDataBySpuId(Long id);
+
+    // 通过spuid删除ES索引库
+    void deleteDataBySpuId(Long id);
 }
