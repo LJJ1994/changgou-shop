@@ -124,4 +124,9 @@ public class SkuController {
         List<Sku> list = skuService.findAll();
         return new Result<List<Sku>>(true, StatusCode.OK,"查询成功",list) ;
     }
+
+    @GetMapping("/list")
+    public List<Sku> findListForSearch(){
+        return skuService.findAll();
+    }
 }
