@@ -22,6 +22,4 @@ public interface SkuFeign {
 
     @GetMapping("/sku/spu/{spuId}")
     public List<Sku> findSkuListBySpuId(@PathVariable("spuId") Long spuId);
-
-
 }

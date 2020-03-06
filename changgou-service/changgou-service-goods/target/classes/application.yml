@@ -3,6 +3,8 @@ server:
 spring:
   application:
     name: goods
+  main:
+    allow-bean-definition-overriding: true
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/changgou_goods?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
