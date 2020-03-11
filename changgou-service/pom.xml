@@ -19,17 +19,14 @@
         <module>changgou-service-business</module>
         <module>changgou-service-search</module>
         <module>changgou-service-page</module>
+        <module>changgou-service-user</module>
+        <module>changgou-service-order</module>
     </modules>
 
     <dependencies>
         <dependency>
             <groupId>com.changgou</groupId>
             <artifactId>changgou-common-db</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.changgou</groupId>
-            <artifactId>changgou-common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
