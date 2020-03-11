@@ -145,4 +145,16 @@ public class SkuController {
 
         return skuService.findList(sku);
     }
+
+    /***
+     * 库存递减
+     * @param username
+     * @return
+     */
+    @PostMapping(value = "/decr/count")
+    public Result decrCount(@RequestParam("username") String username){
+        //库存递减
+        skuService.decrCount(username);
+        return new Result(true,StatusCode.OK,"库存递减成功！");
+    }
 }

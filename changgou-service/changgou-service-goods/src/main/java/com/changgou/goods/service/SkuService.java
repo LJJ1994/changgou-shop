@@ -66,4 +66,10 @@ public interface SkuService {
      * @return
      */
     List<Sku> findAll();
+
+    /***
+     * 库存递减
+     * @param username
+     */
+    void decrCount(String username);
 }

@@ -1,16 +1,26 @@
 package com.changgou.order.service.impl;
 
+import com.changgou.entity.IdWorker;
+import com.changgou.goods.feign.SkuFeign;
+import com.changgou.order.dao.OrderItemMapper;
 import com.changgou.order.dao.OrderMapper;
 import com.changgou.order.pojo.Order;
+import com.changgou.order.pojo.OrderItem;
+import com.changgou.order.service.CartService;
 import com.changgou.order.service.OrderService;
+import com.changgou.user.feign.UserFeign;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /****
  * @Author:LJJ
@@ -24,6 +34,23 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderMapper orderMapper;
 
+    @Autowired
+    private OrderItemMapper orderItemMapper;
+
+    @Autowired
+    private CartService cartService;
+
+    @Autowired
+    private IdWorker idWorker;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    @Autowired
+    private SkuFeign skuFeign;
+
+    @Autowired
+    private UserFeign userFeign;
 
     /**
      * Order条件+分页查询
@@ -214,8 +241,42 @@ public class OrderServiceImpl implements OrderService {
      * @param order
      */
     @Override
+    @Transactional
     public void add(Order order){
-        orderMapper.insert(order);
+        // 1) 获取所有购物项
+        Map map = cartService.list(order.getUsername());
+        List<OrderItem> orderItemList = (List<OrderItem>)map.get("orderItemList");
+        Integer totalMoney = (Integer) map.get("totalMoney");
+        Integer totalNum = (Integer) map.get("totalNum");
+
+        //添加订单
+        order.setId(String.valueOf(idWorker.nextId()));
+        order.setTotalMoney(totalMoney);
+        order.setTotalNum(totalNum);
+        order.setPayMoney(totalMoney);
+        order.setCreateTime(new Date());
+        order.setUpdateTime(order.getCreateTime());
+        order.setBuyerRate("0");        //0:未评价，1：已评价
+        order.setSourceType("1");       //来源，1：WEB
+        order.setOrderStatus("0");      //0:未完成,1:已完成，2：已退货
+        order.setPayStatus("0");        //0:未支付，1：已支付，2：支付失败
+        order.setConsignStatus("0");    //0:未发货，1：已发货，2：已收货
+        int count = orderMapper.insertSelective(order);
+
+        //添加订单明细
+        for(OrderItem item : orderItemList){
+            item.setId(String.valueOf(idWorker.nextId()));
+            item.setIsReturn("0"); //是否退货
+            item.setOrderId(order.getId());
+            orderItemMapper.insertSelective(item);
+        }
+        //库存减库存
+        skuFeign.decrCount(order.getUsername());
+        // 增加用户积分
+        Integer points = 10;
+        userFeign.addPoints(points);
+        //清除redis缓存数据
+        redisTemplate.delete("Cart_" + order.getUsername());
     }
 
     /**

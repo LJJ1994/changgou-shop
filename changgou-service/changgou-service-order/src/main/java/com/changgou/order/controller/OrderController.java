@@ -2,6 +2,7 @@ package com.changgou.order.controller;
 
 import com.changgou.entity.Result;
 import com.changgou.entity.StatusCode;
+import com.changgou.order.config.TokenDecode;
 import com.changgou.order.pojo.Order;
 import com.changgou.order.service.OrderService;
 import com.github.pagehelper.PageInfo;
@@ -23,6 +24,9 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private TokenDecode tokenDecode;
 
     /***
      * Order分页条件搜索实现
@@ -97,6 +101,8 @@ public class OrderController {
      */
     @PostMapping
     public Result add(@RequestBody   Order order){
+        String username = tokenDecode.getUserInfo().get("username");
+        order.setUsername(username);
         //调用OrderService实现添加Order
         orderService.add(order);
         return new Result(true,StatusCode.OK,"添加成功");

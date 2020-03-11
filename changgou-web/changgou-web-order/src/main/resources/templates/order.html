@@ -345,7 +345,7 @@
 <script type="text/javascript" src="/js/plugins/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="/js/vue.js"></script>
 <script type="text/javascript" src="/js/axios.js"></script>
-
+<script type="text/javascript" src="/js/api.js"></script>
 <script>
 $(function(){
 	$(".address").hover(function(){
@@ -381,7 +381,8 @@ $(function(){
 				app.$set(app.order,'receiveAddress',address);
 			},
 			add:function () {
-				axios.post('/api/worder/add',this.order).then(function (response) {
+				axios.post('/worder/add',this.order).then(function (response) {
+					console.log(response)
 					if (response.data.flag){
 						//添加订单成功
 						alert("添加订单成功");
