@@ -1,16 +1,24 @@
 package com.changgou.user.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.changgou.order.pojo.Task;
+import com.changgou.user.dao.PointLogMapper;
 import com.changgou.user.dao.UserMapper;
+import com.changgou.user.pojo.PointLog;
 import com.changgou.user.pojo.User;
 import com.changgou.user.service.UserService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import tk.mybatis.mapper.entity.Example;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /****
  * @Author:LJJ
@@ -24,6 +32,11 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private PointLogMapper pointLogMapper;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * User条件+分页查询
@@ -218,5 +231,50 @@ public class UserServiceImpl implements UserService {
     @Override
     public int addUserPoints(String username, Integer pint) {
         return userMapper.addUserPoints(username,pint);
+    }
+
+    /**
+     * 更新用户积分
+     * @param task
+     * @return
+     */
+    @Override
+    @Transactional
+    public int updateUserPoints(Task task) {
+        System.out.println("用户服务现在开始对任务进行处理");
+        //1. 从task中获取相关数据
+        Map map = JSON.parseObject(task.getRequestBody(), Map.class);
+        String username = (String) map.get("username");
+        String orderId = (String) map.get("orderId");
+        int point = (int) map.get("point");
+
+        //2. 判断当前任务是否操作过
+        PointLog pointLog = pointLogMapper.findPointLogByOrderId(orderId);
+        if(pointLog != null){
+            return 0;
+        }
+        //3.将任务存入redis
+        redisTemplate.boundValueOps(task.getId()).set("exist", 30, TimeUnit.SECONDS);
+
+        //4.修改用户积分
+        int points = userMapper.addUserPoints(username, point);
+        if(points <= 0){
+            return 0;
+        }
+
+        //5.记录日志积分表
+        PointLog pointLog1 = new PointLog();
+        pointLog1.setOrderId(orderId);
+        pointLog1.setPoint(point);
+        pointLog1.setUserId(username);
+        int i = pointLogMapper.insertSelective(pointLog1);
+        if(i <= 0){
+            return 0;
+        }
+
+        //6.删除redis中任务信息
+        redisTemplate.delete(task.getId());
+        System.out.println("用户服务完成了更改用户积分的操作");
+        return 1;
     }
 }

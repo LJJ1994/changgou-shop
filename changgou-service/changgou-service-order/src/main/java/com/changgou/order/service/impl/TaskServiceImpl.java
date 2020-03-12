@@ -1,15 +1,20 @@
 package com.changgou.order.service.impl;
 
+import com.changgou.order.dao.TaskHisMapper;
 import com.changgou.order.dao.TaskMapper;
 import com.changgou.order.pojo.Task;
+import com.changgou.order.pojo.TaskHis;
 import com.changgou.order.service.TaskService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.Date;
 import java.util.List;
 
 /****
@@ -24,6 +29,8 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private TaskMapper taskMapper;
 
+    @Autowired
+    private TaskHisMapper taskHisMapper;
 
     /**
      * Task条件+分页查询
@@ -167,5 +174,24 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<Task> findAll() {
         return taskMapper.selectAll();
+    }
+
+    /**
+     * 删除任务
+     * @param task
+     */
+    @Override
+    @Transactional
+    public void delTask(Task task) {
+        task.setDeleteTime(new Date());
+        Long taskId = task.getId();
+        task.setId(null);
+
+        TaskHis taskHis = new TaskHis();
+        BeanUtils.copyProperties(task, taskHis);
+        taskHisMapper.insertSelective(taskHis);
+
+        task.setId(taskId);
+        taskMapper.deleteByPrimaryKey(task);
     }
 }

@@ -1,11 +1,16 @@
 package com.changgou.order.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fescar.spring.annotation.GlobalTransactional;
 import com.changgou.entity.IdWorker;
 import com.changgou.goods.feign.SkuFeign;
+import com.changgou.order.config.RabbitMQConfig;
 import com.changgou.order.dao.OrderItemMapper;
 import com.changgou.order.dao.OrderMapper;
+import com.changgou.order.dao.TaskMapper;
 import com.changgou.order.pojo.Order;
 import com.changgou.order.pojo.OrderItem;
+import com.changgou.order.pojo.Task;
 import com.changgou.order.service.CartService;
 import com.changgou.order.service.OrderService;
 import com.changgou.user.feign.UserFeign;
@@ -19,6 +24,7 @@ import org.springframework.util.StringUtils;
 import tk.mybatis.mapper.entity.Example;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +42,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderItemMapper orderItemMapper;
+
+    @Autowired
+    private TaskMapper taskMapper;
 
     @Autowired
     private CartService cartService;
@@ -241,7 +250,7 @@ public class OrderServiceImpl implements OrderService {
      * @param order
      */
     @Override
-    @Transactional
+    @GlobalTransactional(name="order_add")
     public void add(Order order){
         // 1) 获取所有购物项
         Map map = cartService.list(order.getUsername());
@@ -275,6 +284,20 @@ public class OrderServiceImpl implements OrderService {
         // 增加用户积分
         Integer points = 10;
         userFeign.addPoints(points);
+        // int i = 10/0;
+        // 添加任务表记录
+        Task task = new Task();
+        task.setCreateTime(new Date());
+        task.setUpdateTime(new Date());
+        task.setMqExchange(RabbitMQConfig.EX_BUYING_ADDPOINTUSER);
+        task.setMqRoutingkey(RabbitMQConfig.CG_BUYING_ADDPOINT_KEY);
+
+        Map msgMap = new HashMap();
+        msgMap.put("username", order.getUsername());
+        msgMap.put("orderId", order.getId());
+        msgMap.put("point", order.getPayMoney());
+        task.setRequestBody(JSON.toJSONString(msgMap));
+        taskMapper.insertSelective(task);
         //清除redis缓存数据
         redisTemplate.delete("Cart_" + order.getUsername());
     }

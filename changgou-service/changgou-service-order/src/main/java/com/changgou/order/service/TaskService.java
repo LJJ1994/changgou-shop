@@ -66,4 +66,9 @@ public interface TaskService {
      * @return
      */
     List<Task> findAll();
+
+    /**
+     * 删除任务
+     */
+    void delTask(Task task);
 }
