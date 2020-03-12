@@ -52,7 +52,7 @@ public interface OrderService {
      * 新增Order
      * @param order
      */
-    void add(Order order);
+    String add(Order order);
 
     /**
      * 根据ID查询Order
@@ -66,4 +66,11 @@ public interface OrderService {
      * @return
      */
     List<Order> findAll();
+
+    /**
+     * 修改订单状态为已支付
+     * @param orderId
+     * @param transactionId
+     */
+    void updatePayStatus(String orderId, String transactionId);
 }

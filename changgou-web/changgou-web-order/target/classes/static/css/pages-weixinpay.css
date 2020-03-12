@@ -206,7 +206,7 @@ ul.send-detail li {
 .checkout-steps .saosao {
   background: url(../img/pay/icon-red.png) 50px 8px no-repeat #ff7674;
   margin-top: 15px;
-  padding: 8px 0 8px 125px;
+  padding: 8px 0 8px 60px;
 }
 .checkout-steps .saosao p {
   margin-bottom: 5px;

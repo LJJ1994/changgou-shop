@@ -176,7 +176,6 @@
 		methods:{
 			login:function () {
 				app.msg="正在登录";
-				alert(app.username)
 				axios.post("/oauth/login?username="+app.username+"&password="+app.password).then(function (response) {
 					console.log(response)
 					if (response.data.flag){

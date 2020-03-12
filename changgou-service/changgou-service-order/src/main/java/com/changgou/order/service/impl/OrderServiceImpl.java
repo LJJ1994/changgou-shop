@@ -6,10 +6,12 @@ import com.changgou.entity.IdWorker;
 import com.changgou.goods.feign.SkuFeign;
 import com.changgou.order.config.RabbitMQConfig;
 import com.changgou.order.dao.OrderItemMapper;
+import com.changgou.order.dao.OrderLogMapper;
 import com.changgou.order.dao.OrderMapper;
 import com.changgou.order.dao.TaskMapper;
 import com.changgou.order.pojo.Order;
 import com.changgou.order.pojo.OrderItem;
+import com.changgou.order.pojo.OrderLog;
 import com.changgou.order.pojo.Task;
 import com.changgou.order.service.CartService;
 import com.changgou.order.service.OrderService;
@@ -45,6 +47,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private TaskMapper taskMapper;
+
+    @Autowired
+    private OrderLogMapper orderLogMapper;
 
     @Autowired
     private CartService cartService;
@@ -251,15 +256,15 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @GlobalTransactional(name="order_add")
-    public void add(Order order){
+    public String add(Order order){
         // 1) 获取所有购物项
         Map map = cartService.list(order.getUsername());
         List<OrderItem> orderItemList = (List<OrderItem>)map.get("orderItemList");
         Integer totalMoney = (Integer) map.get("totalMoney");
         Integer totalNum = (Integer) map.get("totalNum");
-
+        String orderId = String.valueOf(idWorker.nextId());
         //添加订单
-        order.setId(String.valueOf(idWorker.nextId()));
+        order.setId(orderId);
         order.setTotalMoney(totalMoney);
         order.setTotalNum(totalNum);
         order.setPayMoney(totalMoney);
@@ -300,6 +305,8 @@ public class OrderServiceImpl implements OrderService {
         taskMapper.insertSelective(task);
         //清除redis缓存数据
         redisTemplate.delete("Cart_" + order.getUsername());
+
+        return orderId;
     }
 
     /**
@@ -319,5 +326,35 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> findAll() {
         return orderMapper.selectAll();
+    }
+
+    /**
+     * 修改订单状态为已支付
+     * @param orderId
+     * @param transactionId
+     */
+    @Override
+    public void updatePayStatus(String orderId, String transactionId) {
+        Order order = orderMapper.selectByPrimaryKey(orderId);
+        if (order != null && "0".equals(order.getPayStatus())){
+            //2.修改订单的支付状态
+            order.setPayStatus("1");
+            order.setOrderStatus("1");
+            order.setUpdateTime(new Date());
+            order.setPayTime(new Date());
+            order.setTransactionId(transactionId); //微信返回的交易流水号
+            orderMapper.updateByPrimaryKeySelective(order);
+
+            //3.记录订单日志
+            OrderLog orderLog = new OrderLog();
+            orderLog.setId(idWorker.nextId()+"");
+            orderLog.setOperater("system");
+            orderLog.setOperateTime(new Date());
+            orderLog.setOrderStatus("1");
+            orderLog.setPayStatus("1");
+            orderLog.setRemarks("交易流水号:"+transactionId);
+            orderLog.setOrderId(orderId);
+            orderLogMapper.insert(orderLog);
+        }
     }
 }

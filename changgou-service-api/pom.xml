@@ -17,6 +17,7 @@
         <module>changgou-service-search-api</module>
         <module>changgou-service-user-api</module>
         <module>changgou-service-order-api</module>
+        <module>changgou-service-pay-api</module>
     </modules>
 
     <dependencies>

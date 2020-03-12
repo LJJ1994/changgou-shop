@@ -75,4 +75,19 @@ public class OrderController {
     public Result add(@RequestBody Order order){
         return orderFeign.add(order);
     }
+
+    /**
+     * 跳转到支付页
+     * @param orderId
+     * @param model
+     * @return
+     */
+    @GetMapping("/toPayPage")
+    public String toPayPage(String orderId, Model model){
+        Result<Order> result = orderFeign.findById(orderId);
+        Order order = result.getData();
+        model.addAttribute("orderId", orderId);
+        model.addAttribute("payMoney", order.getPayMoney());
+        return "pay";
+    }
 }
