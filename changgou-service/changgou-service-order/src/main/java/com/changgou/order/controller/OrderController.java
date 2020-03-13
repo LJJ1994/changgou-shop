@@ -100,7 +100,7 @@ public class OrderController {
      * @return
      */
     @PostMapping
-    public Result add(@RequestBody   Order order){
+    public Result add(@RequestBody Order order){
         String username = tokenDecode.getUserInfo().get("username");
         order.setUsername(username);
         //调用OrderService实现添加Order
@@ -129,5 +129,28 @@ public class OrderController {
         //调用OrderService实现查询所有Order
         List<Order> list = orderService.findAll();
         return new Result<List<Order>>(true, StatusCode.OK,"查询成功",list) ;
+    }
+
+    /**
+     * 批量发货
+     * @param orders  订单列表
+     */
+    @PostMapping("/batchSend")
+    public Result batchSend( @RequestBody List<Order> orders){
+        orderService.batchSend(orders);
+        return new Result( true, StatusCode.OK,"发货成功");
+    }
+
+    /**
+     * 确认收货
+     * @param orderId  订单号
+     * @param operator 操作者
+     * @return
+     */
+    @PutMapping("/take/{orderId}/operator/{operator}")
+    public Result take(@PathVariable String orderId,
+                       @PathVariable String operator){
+        orderService.confirmTask(orderId, operator);
+        return new Result( true,StatusCode.OK,"确认收货成功!");
     }
 }

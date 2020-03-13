@@ -5,14 +5,8 @@ import com.alibaba.fescar.spring.annotation.GlobalTransactional;
 import com.changgou.entity.IdWorker;
 import com.changgou.goods.feign.SkuFeign;
 import com.changgou.order.config.RabbitMQConfig;
-import com.changgou.order.dao.OrderItemMapper;
-import com.changgou.order.dao.OrderLogMapper;
-import com.changgou.order.dao.OrderMapper;
-import com.changgou.order.dao.TaskMapper;
-import com.changgou.order.pojo.Order;
-import com.changgou.order.pojo.OrderItem;
-import com.changgou.order.pojo.OrderLog;
-import com.changgou.order.pojo.Task;
+import com.changgou.order.dao.*;
+import com.changgou.order.pojo.*;
 import com.changgou.order.service.CartService;
 import com.changgou.order.service.OrderService;
 import com.changgou.pay.feign.WxPayFeign;
@@ -30,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import tk.mybatis.mapper.entity.Example;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +50,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderLogMapper orderLogMapper;
+
+    @Autowired
+    private OrderConfigMapper orderConfigMapper;
 
     @Autowired
     private CartService cartService;
@@ -445,6 +443,112 @@ public class OrderServiceImpl implements OrderService {
             //基于微信关闭订单
             payFeign.closeOrder(orderId);
 
+        }
+    }
+
+    /**
+     * 批量发货
+     * @param orders
+     */
+    @Override
+    @Transactional
+    public void batchSend(List<Order> orders) {
+        //1.判断运单号和物流公司是否为空
+        for(Order order : orders){
+            if(order.getShippingCode() == null || order.getShippingName() == null){
+                throw new RuntimeException("请填写运单号或物流公司");
+            }
+        }
+
+        //2. 校验订单状态
+        for (Order order : orders){
+            Order one = orderMapper.selectByPrimaryKey(order.getId());
+            // 不是未发货状态 或 订单未支付
+            if(!one.getConsignStatus().equals("0") || !one.getOrderStatus().equals("1")){
+                throw new RuntimeException("订单状态有误!");
+            }
+        }
+
+        //3.循环更新订单状态
+        for(Order order : orders){
+            order.setConsignStatus("1"); // 发货状态：已发货
+            order.setOrderStatus("2"); // 订单状态：已发货
+            order.setConsignTime(new Date()); //发货时间
+            order.setUpdateTime(new Date()); //更新时间
+            orderMapper.updateByPrimaryKeySelective(order);
+
+            // 记录订单变动记录
+            OrderLog orderLog = new OrderLog();
+            orderLog.setId(idWorker.nextId() + "");
+            orderLog.setOperater("admin");
+            orderLog.setConsignStatus("1");
+            orderLog.setOrderStatus("2");
+            orderLog.setOperateTime(new Date());
+            orderLog.setPayStatus("1");
+            orderLog.setOrderId(order.getId());
+            orderLogMapper.insertSelective(orderLog);
+        }
+        //4.设置第三方物流信息..
+    }
+
+    /**
+     * 确认收货
+     * @param orderId 订单id
+     * @param operator 操作人
+     */
+    @Override
+    @Transactional
+    public void confirmTask(String orderId, String operator) {
+        Order order = orderMapper.selectByPrimaryKey(orderId);
+        if(order == null){
+            throw new RuntimeException("订单不存在!");
+        }
+        if(!"1".equals(order.getConsignStatus())){
+            throw new RuntimeException("订单未发货！");
+        }
+        // 更改订单状态
+        order.setOrderStatus("3"); // 已完成
+        order.setConsignStatus("2"); // 发货状态：已送达
+        order.setUpdateTime(new Date());//a更新时间
+        order.setEndTime(new Date());//交易结束时间
+        orderMapper.updateByPrimaryKeySelective(order);
+
+        // 订单日志
+        OrderLog orderLog=new OrderLog();
+        orderLog.setId(idWorker.nextId()+"");
+        orderLog.setOperateTime(new Date());//当前日期
+        orderLog.setOperater(operator);//系统, 管理员, 用户
+        orderLog.setOrderStatus("3");
+        orderLog.setOrderId(order.getId());
+        orderLogMapper.insertSelective(orderLog);
+    }
+
+    /**
+     * 自动确认收货
+     */
+    @Override
+    @Transactional
+    public void autoTack() {
+        /**
+         * 1.从订单配置表中获取到订单自动确认的时间点
+         * 2. 得到当前时间节点,向前数 ( 订单自动确认的时间节点 ) 天,作为过期的时间节点
+         * 3. 从订单表中获取相关符合条件的数据 (发货时间小于过期时间,收货状态为未确认 )
+         * 4.循环遍历,执行确认收货
+         */
+        OrderConfig orderConfig = orderConfigMapper.selectByPrimaryKey(1);
+        LocalDate localDate = LocalDate.now();
+        // 获取过期时间点
+        LocalDate date = localDate.plusDays(-orderConfig.getTakeTimeout());
+        Example example = new Example(Order.class);
+        Example.Criteria criteria = example.createCriteria();
+
+        // 发货时间小于过期时间点的并且状态为未收货
+        criteria.andLessThan("consignTime", date);
+        criteria.andEqualTo("orderStatus", "2"); // 已发货
+        List<Order> orderList = orderMapper.selectByExample(example);
+
+        for(Order order : orderList){
+            this.confirmTask(order.getId(), "system");
         }
     }
 }

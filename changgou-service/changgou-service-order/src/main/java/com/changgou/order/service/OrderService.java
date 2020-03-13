@@ -79,4 +79,22 @@ public interface OrderService {
      * @param message
      */
     void closeOrder(String message);
+
+    /**
+     * 批量发货
+     * @param orders
+     */
+    void batchSend(List<Order> orders);
+
+    /**
+     * 确认收货
+     * @param orderId 订单id
+     * @param operator 操作人
+     */
+    void confirmTask(String orderId,String operator);
+
+    /**
+     * 自动确认收货
+     */
+    void autoTack();
 }
