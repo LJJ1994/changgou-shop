@@ -73,4 +73,10 @@ public interface OrderService {
      * @param transactionId
      */
     void updatePayStatus(String orderId, String transactionId);
+
+    /**
+     * 关闭订单
+     * @param message
+     */
+    void closeOrder(String message);
 }

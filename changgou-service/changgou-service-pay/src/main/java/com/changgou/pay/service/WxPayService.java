@@ -18,5 +18,17 @@ public interface WxPayService {
      */
     Map nativePay(String orderId, Integer money);
 
-    Map queryOrder(String out_trade_no);
+    /**
+     * 查询订单
+     * @param orderId
+     * @return
+     */
+    Map queryOrder(String orderId);
+
+    /**
+     * 关闭订单
+     * @param orderId
+     * @return
+     */
+    Map closeOrder(String orderId);
 }

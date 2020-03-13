@@ -3,10 +3,7 @@ package com.changgou.goods.feign;
 import com.changgou.entity.Result;
 import com.changgou.goods.pojo.Sku;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -39,6 +36,15 @@ public interface SkuFeign {
      * @param username
      * @return
      */
-    @PostMapping(value = "/sku/decr/count")
+    @PostMapping("/sku/decr/count")
     Result decrCount(@RequestParam(value = "username") String username);
+
+    /**
+     * 库存回滚
+     * @param skuId
+     * @param num
+     * @return
+     */
+    @RequestMapping("/sku/resumeStockNum")
+    public Result resumeStockNum(@RequestParam("skuId") Long skuId,@RequestParam("num")Integer num);
 }

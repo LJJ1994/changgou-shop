@@ -234,4 +234,15 @@ public class SkuServiceImpl implements SkuService {
             }
         }
     }
+
+    /**
+     * 库存回滚
+     * @param skuId
+     * @param num
+     */
+    @Override
+    @Transactional
+    public void resumeStockNum(Long skuId, Integer num) {
+        skuMapper.resumeStockNum(skuId, num);
+    }
 }

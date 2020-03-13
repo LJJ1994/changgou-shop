@@ -17,5 +17,5 @@ public interface SkuMapper extends Mapper<Sku> {
 
     //回滚库存(增加库存并扣减销量)
     @Update("update tb_sku set num=num+#{num},sale_num=sale_num-#{num} where id=#{skuId}")
-    void resumeStockNum(@Param("skuId") String skuId, @Param("num")Integer num);
+    void resumeStockNum(@Param("skuId") Long skuId, @Param("num")Integer num);
 }

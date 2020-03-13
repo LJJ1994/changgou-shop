@@ -157,4 +157,16 @@ public class SkuController {
         skuService.decrCount(username);
         return new Result(true,StatusCode.OK,"库存递减成功！");
     }
+
+    /**
+     * 库存回滚
+     * @param skuId
+     * @param num
+     * @return
+     */
+    @RequestMapping("/resumeStockNum")
+    public Result resumeStockNum(@RequestParam("skuId") Long skuId,@RequestParam("num")Integer num){
+        skuService.resumeStockNum(skuId, num);
+        return new Result(true,StatusCode.OK,"回滚库存成功");
+    }
 }

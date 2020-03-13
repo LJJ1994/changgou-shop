@@ -226,7 +226,6 @@ qrcode.makeCode([[${code_url}]]);
 let client = Stomp.client('ws://127.0.0.1:15674/ws');
 let on_connect = function(x) {
     id = client.subscribe("/exchange/paynotify", function(d) {
-        alert(d.body);
         alert("支付成功!")
         let orderId = [[${orderId}]]
 		if (d.body == orderId) {
