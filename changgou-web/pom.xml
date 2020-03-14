@@ -11,6 +11,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>changgou-web-order</module>
+        <module>changgou-web-seckill</module>
     </modules>
     <artifactId>changgou-web</artifactId>
 
