@@ -1,6 +1,7 @@
 package com.changgou.seckill;
 
 import com.changgou.entity.IdWorker;
+import com.changgou.interceptor.FeignInterceptor;
 import com.changgou.seckill.config.TokenDecode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -18,6 +19,7 @@ import tk.mybatis.spring.annotation.MapperScan;
 @EnableEurekaClient
 @MapperScan(basePackages = {"com.changgou.seckill.dao"})
 @EnableScheduling
+@EnableFeignClients(basePackages = {"com.changgou.pay.feign"})
 public class SecKillApplication {
 
     public static void main(String[] args) {
@@ -47,8 +49,13 @@ public class SecKillApplication {
 //        return template;
 //    }
 
-//    @Bean
-//    public TokenDecode tokenDecode(){
-//        return new TokenDecode();
-//    }
+    @Bean
+    public FeignInterceptor feignInterceptor(){
+        return new FeignInterceptor();
+    }
+
+    @Bean
+    public TokenDecode tokenDecode(){
+        return new TokenDecode();
+    }
 }

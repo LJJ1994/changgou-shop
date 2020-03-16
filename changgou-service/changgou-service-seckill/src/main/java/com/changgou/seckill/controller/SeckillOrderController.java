@@ -1,11 +1,15 @@
 package com.changgou.seckill.controller;
 
 import com.changgou.entity.Result;
+import com.changgou.entity.SeckillStatus;
 import com.changgou.entity.StatusCode;
+import com.changgou.seckill.config.TokenDecode;
 import com.changgou.seckill.pojo.SeckillOrder;
 import com.changgou.seckill.service.SeckillOrderService;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,11 +22,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/seckillOrder")
-@CrossOrigin
 public class SeckillOrderController {
 
     @Autowired
     private SeckillOrderService seckillOrderService;
+
+    @Autowired
+    private TokenDecode tokenDecode;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /***
      * SeckillOrder分页条件搜索实现
@@ -90,27 +99,33 @@ public class SeckillOrderController {
         return new Result(true,StatusCode.OK,"修改成功");
     }
 
-    /***
-     * 新增SeckillOrder数据
-     * @param seckillOrder
+    /**
+     * 秒杀多线程下单
+     * @param id
+     * @param time
      * @return
      */
-    @PostMapping
-    public Result add(@RequestBody   SeckillOrder seckillOrder){
-        //调用SeckillOrderService实现添加SeckillOrder
-        seckillOrderService.add(seckillOrder);
+    @PostMapping("/add")
+    public Result add(@RequestParam("id") Long id,
+                      @RequestParam("time") String time){
+        String username = tokenDecode.getUserInfo().get("username");
+        // 匿名用户，表示用户未登录
+        if(username.equalsIgnoreCase("anonymousUser")){
+            return new Result(false, StatusCode.ACCESSERROR, "请登录");
+        }
+        seckillOrderService.add(id, time, username);
         return new Result(true,StatusCode.OK,"添加成功");
     }
 
     /***
      * 根据ID查询SeckillOrder数据
-     * @param id
+     * @param username
      * @return
      */
-    @GetMapping("/{id}")
-    public Result<SeckillOrder> findById(@PathVariable Long id){
-        //调用SeckillOrderService实现根据主键查询SeckillOrder
-        SeckillOrder seckillOrder = seckillOrderService.findById(id);
+    @GetMapping("/{username}")
+    public Result<SeckillOrder> findById(@PathVariable("username") String username){
+        //调用SeckillOrderService实现根据用户名查询redis中的SeckillOrder
+        SeckillOrder seckillOrder = seckillOrderService.findById(username);
         return new Result<SeckillOrder>(true,StatusCode.OK,"查询成功",seckillOrder);
     }
 
@@ -123,5 +138,24 @@ public class SeckillOrderController {
         //调用SeckillOrderService实现查询所有SeckillOrder
         List<SeckillOrder> list = seckillOrderService.findAll();
         return new Result<List<SeckillOrder>>(true, StatusCode.OK,"查询成功",list) ;
+    }
+
+    /**
+     * 查询redis 用户抢单状态信息
+     * @return
+     */
+    @GetMapping(value = "/query")
+    public Result queryStatus(){
+        // 获取用户名
+        String username = tokenDecode.getUserInfo().get("username");
+        // 匿名用户，表示用户未登录
+        if(username.equalsIgnoreCase("anonymousUser")){
+            return new Result(false, StatusCode.ACCESSERROR, "请登录");
+        }
+        SeckillStatus seckillStatus = seckillOrderService.queryStatus(username);
+        if (seckillStatus == null){
+            return new Result(false, StatusCode.ERROR, "没有抢购信息");
+        }
+        return new Result(true, StatusCode.OK, "查询抢购状态成功!", seckillStatus);
     }
 }

@@ -4,6 +4,7 @@ import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /****
@@ -22,7 +23,7 @@ public class SeckillOrder implements Serializable{
 	private Long seckillId;//秒杀商品ID
 
     @Column(name = "money")
-	private String money;//支付金额
+	private BigDecimal money;//支付金额
 
     @Column(name = "user_id")
 	private String userId;//用户
@@ -72,12 +73,12 @@ public class SeckillOrder implements Serializable{
 		this.seckillId = seckillId;
 	}
 	//get方法
-	public String getMoney() {
+	public BigDecimal getMoney() {
 		return money;
 	}
 
 	//set方法
-	public void setMoney(String money) {
+	public void setMoney(BigDecimal money) {
 		this.money = money;
 	}
 	//get方法

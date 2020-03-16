@@ -58,6 +58,8 @@ public class WxPayController {
 
             //基于微信发送的通知内容,完成后续的业务逻辑处理
             Map<String, String> map = WXPayUtil.xmlToMap(xml);
+            String resultCode = map.get("result_code");
+            String returnCode = map.get("return_code");
             if ("SUCCESS".equals(map.get("result_code"))){
 
                 //查询订单

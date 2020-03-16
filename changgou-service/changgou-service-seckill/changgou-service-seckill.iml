@@ -137,6 +137,7 @@
     <orderEntry type="library" name="Maven: javax.persistence:persistence-api:1.0" level="project" />
     <orderEntry type="module" module-name="changgou-service-seckill-api" />
     <orderEntry type="module" module-name="changgou-service-goods-api" />
+    <orderEntry type="module" module-name="changgou-service-pay-api" />
     <orderEntry type="library" name="Maven: org.springframework.amqp:spring-rabbit:2.1.5.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.amqp:spring-amqp:2.1.5.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.retry:spring-retry:1.2.4.RELEASE" level="project" />

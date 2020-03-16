@@ -18,7 +18,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/seckillgoods")
-@CrossOrigin
 public class SeckillGoodsController {
 
     @Autowired

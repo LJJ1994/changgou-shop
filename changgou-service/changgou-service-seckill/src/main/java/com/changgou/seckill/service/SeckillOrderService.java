@@ -1,5 +1,6 @@
 package com.changgou.seckill.service;
 
+import com.changgou.entity.SeckillStatus;
 import com.changgou.seckill.pojo.SeckillOrder;
 import com.github.pagehelper.PageInfo;
 
@@ -50,20 +51,34 @@ public interface SeckillOrderService {
 
     /***
      * 新增SeckillOrder
-     * @param seckillOrder
+     * @param
      */
-    void add(SeckillOrder seckillOrder);
+    void add(Long id, String time, String username);
 
     /**
      * 根据ID查询SeckillOrder
-     * @param id
+     * @param username
      * @return
      */
-     SeckillOrder findById(Long id);
+     SeckillOrder findById(String username);
 
     /***
      * 查询所有SeckillOrder
      * @return
      */
     List<SeckillOrder> findAll();
+
+    /***
+     * 抢单状态查询
+     * @param username
+     */
+    SeckillStatus queryStatus(String username);
+
+    /**
+     * 更新订单状态
+     * @param out_trade_no
+     * @param transactionId
+     * @param username
+     */
+    void updatePayStatus(String out_trade_no, String transactionId, String username);
 }

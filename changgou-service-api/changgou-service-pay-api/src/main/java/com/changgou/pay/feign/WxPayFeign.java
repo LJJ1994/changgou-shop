@@ -22,9 +22,19 @@ public interface WxPayFeign {
     public Result<Map> nativePay(@RequestParam("orderId") String orderId,
                                  @RequestParam("money") Integer money);
 
+    /**
+     * 查询微信支付状态
+     * @param orderId
+     * @return
+     */
     @GetMapping("/wxpay/query/{orderId}")
     public Result queryOrder(@PathVariable("orderId") String orderId);
 
+    /**
+     * 手动关闭订单
+     * @param orderId
+     * @return
+     */
     @PutMapping("/wxpay/close/{orderId}")
     public Result closeOrder(@PathVariable("orderId") String orderId);
 }

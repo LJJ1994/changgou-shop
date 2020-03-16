@@ -192,7 +192,7 @@
 							<div class="fl">
 								<ul class="btn-choose unstyled">
 									<li>
-										<a href="javascript:void(0)" @click="add()" target="_blank" class="addshopcar">立即抢购</a>
+										<a href="javascript:void(0)" @click="add()" class="addshopcar">立即抢购</a>
 										{{msg}}
 									</li>
 								</ul>
@@ -842,14 +842,44 @@
 				//获取地址栏数据
 				let time = getQueryString("time");
 				let id = getQueryString("id");
-				axios.get("/api/wseckillorder/add?time="+time+"&id="+id).then(function (response) {
-					if (response.data.flag){
-						app.msg='抢单成功，即将进入支付!';
-					}else{
-						app.msg='抢单失败';
-					}
-				})
+				// 判断用户登录状态.....
 
+				// 下单请求
+				let apiPrefix = "http://localhost:8001/api";
+				axios.post(apiPrefix + "/seckillOrder/add?time="+time+"&id="+id).then(function (response) {
+					app.queryStatus();
+				})
+			},
+			// 轮询查询订单状态
+			queryStatus(){
+				let count = 120;
+				let queryClock = window.setInterval(()=>{
+					// 时间递减
+					count--;
+					// 查询订单状态
+					let apiPrefix = "http://localhost:8001/api";
+					axios.get(apiPrefix + '/seckillOrder/query').then((res)=>{
+						console.log(res);
+						if(res.data.code==20003){
+							app.msg = '用户未登录';
+							let apiPrefix = "http://localhost:8001/api";
+							let from = "http://localhost:9104/wseckillgoods//toSeckillItem";
+							window.location = apiPrefix + "/oauth/toLogin?from=" + from;
+						} else if(res.data.code == 20005){
+							// 商品售罄
+							app.msg = res.data.message;
+						}else if(res.data.code == 20001){
+							// 没有抢购信息
+							app.msg = res.data.message;
+						}else if(res.data.code == 20000){
+							app.msg = '抢购成功!即将进入支付...';
+							window.location = "/wseckillorder/toPayPage?orderId="+res.data.data.orderId+"&money="+res.data.data.money*100;
+						} else {
+							app.msg = '服务器繁忙...';
+						}
+						window.clearInterval(queryClock);
+					})
+				}, 1000) //每秒向后端轮询发起订单查询请求
 			},
 			//将毫秒转换成天时分秒
 			timedown:function(num) {

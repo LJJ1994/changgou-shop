@@ -1,15 +1,19 @@
 package com.changgou.seckill.service.impl;
 
+import com.changgou.entity.SeckillStatus;
 import com.changgou.seckill.dao.SeckillOrderMapper;
 import com.changgou.seckill.pojo.SeckillOrder;
 import com.changgou.seckill.service.SeckillOrderService;
+import com.changgou.seckill.task.MultiThreadingCreateOrder;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.Date;
 import java.util.List;
 
 /****
@@ -24,6 +28,11 @@ public class SeckillOrderServiceImpl implements SeckillOrderService {
     @Autowired
     private SeckillOrderMapper seckillOrderMapper;
 
+    @Autowired
+    private MultiThreadingCreateOrder multiThreadingCreateOrder;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * SeckillOrder条件+分页查询
@@ -149,23 +158,80 @@ public class SeckillOrderServiceImpl implements SeckillOrderService {
         seckillOrderMapper.updateByPrimaryKey(seckillOrder);
     }
 
-    /**
-     * 增加SeckillOrder
-     * @param seckillOrder
+    /***
+     * 抢单状态查询
+     * @param username
      */
     @Override
-    public void add(SeckillOrder seckillOrder){
-        seckillOrderMapper.insert(seckillOrder);
+    public SeckillStatus queryStatus(String username){
+        return (SeckillStatus) redisTemplate.boundHashOps("UserQueueStatus").get(username);
+    }
+
+    /**
+     * 更新订单状态
+     * @param out_trade_no
+     * @param transactionId
+     * @param username
+     */
+    @Override
+    public void updatePayStatus(String out_trade_no, String transactionId, String username) {
+        // 从redis查询订单数据
+        SeckillOrder seckillOrder = (SeckillOrder) redisTemplate.boundHashOps("SeckillOrder").get(username);
+        if(seckillOrder != null){
+            seckillOrder.setStatus("1"); //支付状态，0未支付，1已支付
+            seckillOrder.setPayTime(new Date()); //支付时间
+            seckillOrderMapper.insertSelective(seckillOrder); //同步到MySQL
+
+            //清空redis缓存
+            redisTemplate.boundHashOps("SeckillOrder").delete(username);
+            //清空排队信息
+            redisTemplate.boundHashOps("UserQueueCount").delete(username);
+            //清空抢单标识
+            redisTemplate.boundHashOps("UserQueueStatus").delete(username);
+        }
+    }
+
+    /**
+     * 下单
+     * @param id
+     * @param time
+     * @param username
+     */
+    @Override
+    public void add(Long id, String time, String username){
+        //判断是否有库存
+        Long size = redisTemplate.boundListOps("SeckillGoodsCountList_" + id).size();
+        if(size == null || size <=0 ){
+            //没有库存
+            throw new RuntimeException("101");
+        }
+        /**
+         * 防止重复抢单
+         * 1.用户每次抢单的时候，一旦排队，我们设置一个自增值，让该值的初始值为1
+         * 2.每次进入抢单的时候，对它进行递增，如果值>1，则表明已经排队,不允许重复排队
+         * 3.则对外抛出异常，并抛出异常信息100 表示已经正在排队。
+         */
+        Long count = redisTemplate.boundHashOps("UserQueueCount").increment(username, 1);
+        if(count == null || count > 1){
+            throw new RuntimeException("100");
+        }
+        //排队信息封装
+        SeckillStatus seckillStatus = new SeckillStatus(username, new Date(), 1, id, time);
+        //将秒杀抢单信息存入到Redis中,这里采用List方式存储,List本身是一个队列
+        redisTemplate.boundListOps("SeckillOrderQueue").leftPush(seckillStatus);
+        ////将抢单状态存入到Redis中
+        redisTemplate.boundHashOps("UserQueueStatus").put(username, seckillStatus);
+        multiThreadingCreateOrder.createOrder();
     }
 
     /**
      * 根据ID查询SeckillOrder
-     * @param id
+     * @param username
      * @return
      */
     @Override
-    public SeckillOrder findById(Long id){
-        return  seckillOrderMapper.selectByPrimaryKey(id);
+    public SeckillOrder findById(String username){
+        return (SeckillOrder) redisTemplate.boundHashOps("SeckillOrder").get(username);
     }
 
     /**

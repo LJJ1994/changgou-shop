@@ -1,4 +1,4 @@
-package com.changgou.task;
+package com.changgou.seckill.task;
 
 import com.changgou.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

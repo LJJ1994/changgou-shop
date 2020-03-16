@@ -7,9 +7,7 @@ import com.changgou.seckill.pojo.SeckillGoods;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,6 +23,7 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/wseckillgoods")
+@CrossOrigin
 public class SecKillGoodsController {
     @Autowired
     private SecKillGoodsFeign secKillGoodsFeign;
@@ -32,6 +31,7 @@ public class SecKillGoodsController {
     //跳转秒杀首页
     @RequestMapping("/toIndex")
     public String toIndex(){
+
         return "seckill-index";
     }
 
@@ -40,7 +40,7 @@ public class SecKillGoodsController {
      * time : 当前秒杀时间段
      * id : 秒杀商品id
      */
-    @RequestMapping("/toSeckillItem")
+    @GetMapping("/toSeckillItem")
     public String toSeckillItem(@RequestParam("time") String time,
                                 @RequestParam("id") Long id,
                                 Model model){
@@ -53,7 +53,7 @@ public class SecKillGoodsController {
     }
 
     //获取秒杀时间段集合信息
-    @RequestMapping("/timeMenus")
+    @GetMapping("/timeMenus")
     @ResponseBody
     public List<String> dateMenus(){
 
@@ -74,7 +74,7 @@ public class SecKillGoodsController {
      * @param time
      * @return
      */
-    @RequestMapping("/list")
+    @GetMapping("/list")
     @ResponseBody
     public Result<List<SeckillGoods>> list(@RequestParam("time") String time){
 

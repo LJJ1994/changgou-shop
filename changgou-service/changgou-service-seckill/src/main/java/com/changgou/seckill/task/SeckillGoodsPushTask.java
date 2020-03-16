@@ -64,7 +64,26 @@ public class SeckillGoodsPushTask {
             for (SeckillGoods seckillGoods : seckillGoodsList) {
                 // 添加商品到redis缓存
                 redisTemplate.boundHashOps("SeckillGoods_" + secKillKey).put(seckillGoods.getId(), seckillGoods);
+                //商品数据队列存储,防止高并发超卖
+                Long[] ids= this.pushIds(seckillGoods.getStockCount(), seckillGoods.getId());
+                redisTemplate.boundListOps("SeckillGoodsCountList_" + seckillGoods.getId()).leftPushAll(ids);
+                // 自增计数器
+                redisTemplate.boundHashOps("SeckillGoodsCount").increment(seckillGoods.getId(), seckillGoods.getStockCount());
             }
         }
+    }
+
+    /***
+     * 将商品ID存入到数组中
+     * @param len:长度
+     * @param id :值
+     * @return
+     */
+    public Long[] pushIds(int len, Long id){
+        Long[] ids = new Long[len];
+        for(int i=0; i<len; i++){
+            ids[i] = id;
+        }
+        return ids;
     }
 }

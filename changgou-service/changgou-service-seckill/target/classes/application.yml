@@ -16,7 +16,6 @@ spring:
     host: 127.0.0.1
   rabbitmq:
     host: 127.0.0.1
-    publisher-confirms: true  #开启confirm数据保护机制
 eureka:
   client:
     service-url:
